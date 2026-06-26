@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reincidencia Reactiva · %CR NFTT por Técnico</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0d1322; --bg2:#121a2e; --panel:#16203a; --panel2:#1b2746;
+  --line:#243152; --txt:#e7eefb; --muted:#8b9bc4;
+  --good:#2dd4a7; --mid:#f5b743; --bad:#ff5d6c; --bad2:#ff7a86;
+  --accent:#4cc9f0; --accentdim:#2b6f8f;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#1a2747 0%,var(--bg) 55%);
+  color:var(--txt);font-family:'Inter',-apple-system,Segoe UI,Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;padding:24px;min-height:100vh}
+.mono{font-family:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1320px;margin:0 auto}
+
+/* header */
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px}
+.title-eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:6px}
+h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em}
+h1 span{color:var(--muted);font-weight:500}
+.umbral-badge{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+  border-radius:999px;padding:8px 14px;font-size:13px}
+.umbral-badge b{color:var(--mid)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:18px;background:linear-gradient(180deg,var(--panel),var(--bg2));
+  border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:18px}
+.fgroup{display:flex;flex-direction:column;gap:8px}
+.flabel{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{cursor:pointer;border:1px solid var(--line);background:var(--bg2);color:var(--muted);
+  padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:500;transition:.15s;user-select:none}
+.chip:hover{border-color:var(--accentdim);color:var(--txt)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#06121b;font-weight:600}
+.chip.mon.on{background:var(--mid);border-color:var(--mid)}
+.spacer{flex:1}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.kpi{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+  border-radius:16px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.kpi.warn::before{background:var(--bad)}
+.kpi.ok::before{background:var(--good)}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:600}
+.kpi-val{font-size:30px;font-weight:700;margin-top:8px;line-height:1}
+.kpi-sub{font-size:12px;color:var(--muted);margin-top:7px}
+.kpi-sub b{color:var(--txt);font-weight:600}
+
+/* panels */
+.grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;margin-bottom:18px}
+.panel{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+  border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.panel h2{margin:0 0 2px;font-size:15px;font-weight:650}
+.panel .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+.chartbox{position:relative;height:340px}
+.chartbox.short{height:300px}
+
+/* heatmap */
+.hm-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.legend{display:flex;align-items:center;gap:14px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+.legend .it{display:flex;align-items:center;gap:6px}
+.sw{width:13px;height:13px;border-radius:4px;display:inline-block}
+table{width:100%;border-collapse:separate;border-spacing:0 0;font-size:13px}
+thead th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;
+  font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:10px 8px;text-align:center;
+  border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none}
+thead th.l{text-align:left}
+thead th:hover{color:var(--txt)}
+thead th .ar{opacity:.5;font-size:9px;margin-left:3px}
+tbody td{padding:0;border-bottom:1px solid rgba(36,49,82,.55)}
+.tac-cell{padding:9px 10px;text-align:left;white-space:nowrap}
+.tac-name{font-weight:600;font-size:13px}
+.tac-meta{font-size:10.5px;color:var(--muted);margin-top:1px}
+.cell{height:36px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12.5px;
+  border-radius:7px;margin:3px}
+.tac-cell .reg{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:5px;
+  margin-right:6px;letter-spacing:.05em;vertical-align:middle}
+.reg.RM{background:rgba(76,201,240,.16);color:#7fd6f5}
+.reg.VALPO{background:rgba(167,139,250,.16);color:#bba6fb}
+.spark{display:flex;align-items:flex-end;gap:2px;height:26px;padding:0 6px}
+.spark i{width:7px;border-radius:2px 2px 0 0;display:block}
+.trend{font-weight:700;font-size:13px;text-align:center}
+.trend.up{color:var(--bad)} .trend.down{color:var(--good)} .trend.flat{color:var(--muted)}
+.scroll{max-height:560px;overflow:auto;border-radius:10px;border:1px solid var(--line)}
+.scroll::-webkit-scrollbar{width:10px;height:10px}
+.scroll::-webkit-scrollbar-thumb{background:#2a3a60;border-radius:6px}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.foot{margin-top:18px;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.7}
+.foot code{background:var(--panel);padding:2px 6px;border-radius:5px;color:var(--accent)}
+@media(max-width:980px){.grid2{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.kpis{grid-template-columns:1fr}body{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="title-eyebrow">VTR / CLARO · Dominion · Calidad</div>
+      <h1>Avance de Calidad <span>· Reincidencia reactiva 30 días</span></h1>
+    </div>
+    <div class="umbral-badge"><span class="dot" style="background:var(--mid)"></span>Meta: máximo <b>&nbsp;5,5%</b></div>
+  </header>
+
+  <div class="filters">
+    <div class="fgroup">
+      <span class="flabel">Región</span>
+      <div class="chips" id="f-region"></div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">Supervisor</span>
+      <div class="chips" id="f-sup"></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="fgroup">
+      <span class="flabel">Mes foco (ranking + KPIs)</span>
+      <div class="chips" id="f-mes"></div>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Peores del mes</h2>
+      <div class="sub" id="rank-sub">Top reincidencia · ordenado de mayor a menor</div>
+      <div class="chartbox"><canvas id="rankChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Tendencia del grupo</h2>
+      <div class="sub" id="trend-sub">Promedio de reincidencia mes a mes vs. umbral</div>
+      <div class="chartbox short"><canvas id="trendChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="hm-head">
+      <div>
+        <h2>Mapa de calor · histórico por técnico</h2>
+        <div class="sub" id="hm-sub">Click en un encabezado de mes para ordenar. Rojo = sobre umbral.</div>
+      </div>
+      <div class="legend">
+        <span class="it"><span class="sw" style="background:#2dd4a7"></span>0%</span>
+        <span class="it"><span class="sw" style="background:#f5b743"></span>5,5% (umbral)</span>
+        <span class="it"><span class="sw" style="background:#ff5d6c"></span>11%+</span>
+        <span class="it"><span class="trend up">▲</span> empeora&nbsp;&nbsp;<span class="trend down">▼</span> mejora</span>
+      </div>
+    </div>
+    <div class="scroll">
+      <table id="hm">
+        <thead><tr id="hm-head-row"></tr></thead>
+        <tbody id="hm-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot" id="foot-info">Cargando datos…</div>
+</div>
+
+<script>
+const HAS_CHART = (typeof Chart !== 'undefined');
+let DB = {umbral:5.5, meses:['Mayo','Junio (en curso)'], data:[]};
+let UMBRAL = DB.umbral;
+let MESES = DB.meses.slice();
+
+// ---- color scale (verde -> ambar en umbral -> rojo) ----
+function lerp(a,b,t){return a+(b-a)*t}
+function hex(c){return '#'+c.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('')}
+function colorFor(v){
+  // 0 -> good, UMBRAL -> mid, 2*UMBRAL+ -> bad
+  const good=[45,212,167], mid=[245,183,67], bad=[255,93,108];
+  if(v<=UMBRAL){const t=Math.max(0,v/UMBRAL);return hex([lerp(good[0],mid[0],t),lerp(good[1],mid[1],t),lerp(good[2],mid[2],t)]);}
+  const t=Math.min(1,(v-UMBRAL)/UMBRAL);
+  return hex([lerp(mid[0],bad[0],t),lerp(mid[1],bad[1],t),lerp(mid[2],bad[2],t)]);
+}
+function cellText(v){return v.toFixed(1).replace('.',',')+'%'}
+
+// ---- state ----
+let state={region:'VALPO', sups:new Set(['Todos']), mes:0, sortKey:0, sortDir:-1};
+
+// ---- filters UI ----
+function buildFilters(){
+  const regs=['Todos','VALPO','RM'];
+  document.getElementById('f-region').innerHTML = regs.map(r=>
+    `<span class="chip ${r===state.region?'on':''}" data-r="${r}">${r}</span>`).join('');
+  const sups=['Todos',...[...new Set(DB.data.map(d=>d.sup))].sort()];
+  document.getElementById('f-sup').innerHTML = sups.map(s=>
+    `<span class="chip ${state.sups.has(s)?'on':''}" data-s="${s}">${s}</span>`).join('');
+  document.getElementById('f-mes').innerHTML = MESES.map((m,i)=>
+    `<span class="chip mon ${i===state.mes?'on':''}" data-m="${i}">${m}</span>`).join('');
+
+  document.querySelectorAll('#f-region .chip').forEach(c=>c.onclick=()=>{state.region=c.dataset.r;render();});
+  document.querySelectorAll('#f-sup .chip').forEach(c=>c.onclick=()=>{
+    const s=c.dataset.s;
+    if(s==='Todos'){state.sups=new Set(['Todos']);}
+    else{state.sups.delete('Todos'); state.sups.has(s)?state.sups.delete(s):state.sups.add(s); if(state.sups.size===0)state.sups=new Set(['Todos']);}
+    render();
+  });
+  document.querySelectorAll('#f-mes .chip').forEach(c=>c.onclick=()=>{state.mes=+c.dataset.m; state.sortKey=+c.dataset.m; state.sortDir=-1; render();});
+}
+
+function filtered(){
+  return DB.data.filter(d=>
+    (state.region==='Todos'||d.region===state.region) &&
+    (state.sups.has('Todos')||state.sups.has(d.sup))
+  );
+}
+
+// ---- KPIs ----
+function renderKPIs(rows){
+  const mi=state.mes;
+  const vals=rows.map(r=>r.m[mi]);
+  const avg = vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+  const over = rows.filter(r=>r.m[mi]>UMBRAL).length;
+  const pctOver = rows.length? (over/rows.length*100):0;
+  const worst = rows.slice().sort((a,b)=>b.m[mi]-a.m[mi])[0];
+  const el=document.getElementById('kpis');
+  el.innerHTML=`
+   <div class="kpi"><div class="kpi-label">Técnicos en vista</div>
+     <div class="kpi-val mono">${rows.length}</div>
+     <div class="kpi-sub">${state.region==='Todos'?'todas las regiones':state.region}</div></div>
+   <div class="kpi ${pctOver>40?'warn':''}"><div class="kpi-label">Sobre umbral · ${MESES[mi]}</div>
+     <div class="kpi-val mono">${over}</div>
+     <div class="kpi-sub"><b>${pctOver.toFixed(0)}%</b> del grupo &gt; 5,5%</div></div>
+   <div class="kpi ${avg>UMBRAL?'warn':'ok'}"><div class="kpi-label">Promedio · ${MESES[mi]}</div>
+     <div class="kpi-val mono">${avg.toFixed(1).replace('.',',')}%</div>
+     <div class="kpi-sub">meta 5,5% · ${avg>UMBRAL?'<b style="color:var(--bad)">excede</b>':'<b style="color:var(--good)">cumple</b>'}</div></div>
+   <div class="kpi warn"><div class="kpi-label">Peor técnico · ${MESES[mi]}</div>
+     <div class="kpi-val mono">${worst?worst.m[mi].toFixed(1).replace('.',','):'-'}%</div>
+     <div class="kpi-sub">${worst?worst.tac.split(' ').slice(0,2).join(' '):'-'}</div></div>`;
+}
+
+// ---- charts ----
+let rankChart, trendChart;
+if(HAS_CHART){Chart.defaults.color='#8b9bc4';Chart.defaults.font.family="Inter,sans-serif";}
+
+function chartFallback(id){
+  const c=document.getElementById(id); if(!c)return;
+  const box=c.closest('.chartbox'); if(box)box.innerHTML='<div class="empty">El gráfico requiere conexión a internet (Chart.js).<br>El mapa de calor y los KPIs funcionan sin conexión.</div>';
+}
+
+function renderRank(rows){
+  if(!HAS_CHART){chartFallback('rankChart');return;}
+  const mi=state.mes;
+  const top=rows.slice().sort((a,b)=>b.m[mi]-a.m[mi]).slice(0,15);
+  document.getElementById('rank-sub').textContent=`Top ${top.length} · ${MESES[mi]} · ordenado de mayor a menor`;
+  const labels=top.map(r=>r.tac.split(' ').slice(0,2).join(' '));
+  const vals=top.map(r=>r.m[mi]);
+  const cols=vals.map(v=>colorFor(v));
+  if(rankChart)rankChart.destroy();
+  rankChart=new Chart(document.getElementById('rankChart'),{
+    type:'bar',
+    data:{labels,datasets:[{data:vals,backgroundColor:cols,borderRadius:5,barThickness:14}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>` ${c.raw.toFixed(2).replace('.',',')}%`,
+          afterLabel:c=>{const r=top[c.dataIndex];return `${r.sup} · ${r.region}`;}}},
+        annotation:false},
+      scales:{
+        x:{grid:{color:'rgba(36,49,82,.4)'},ticks:{callback:v=>v+'%'},
+           title:{display:false}, suggestedMax:Math.max(8,Math.max(...vals)*1.1)},
+        y:{grid:{display:false},ticks:{font:{size:11}}}
+      }}
+  });
+  drawUmbralLine('rankChart');
+}
+
+// umbral vertical line for horizontal bar chart
+const umbralPlugin={
+  id:'umbralX',
+  afterDraw(chart){
+    if(chart.canvas.id!=='rankChart')return;
+    const {ctx,chartArea,scales}=chart; const x=scales.x.getPixelForValue(UMBRAL);
+    ctx.save();ctx.strokeStyle='#f5b743';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.moveTo(x,chartArea.top);ctx.lineTo(x,chartArea.bottom);ctx.stroke();
+    ctx.setLineDash([]);ctx.fillStyle='#f5b743';ctx.font='10px Inter';ctx.textAlign='center';
+    ctx.fillText('5,5%',x,chartArea.top-3);ctx.restore();
+  }
+};
+if(HAS_CHART)Chart.register(umbralPlugin);
+function drawUmbralLine(){}
+
+function renderTrend(rows){
+  if(!HAS_CHART){chartFallback('trendChart');return;}
+  const avgs=MESES.map((_,i)=>{const v=rows.map(r=>r.m[i]);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0;});
+  const overCounts=MESES.map((_,i)=>rows.filter(r=>r.m[i]>UMBRAL).length);
+  if(trendChart)trendChart.destroy();
+  trendChart=new Chart(document.getElementById('trendChart'),{
+    type:'line',
+    data:{labels:MESES.map(m=>m.replace(' (en curso)','*')),
+      datasets:[
+        {label:'Promedio %',data:avgs,borderColor:'#4cc9f0',backgroundColor:'rgba(76,201,240,.12)',
+         fill:true,tension:.3,pointRadius:5,pointBackgroundColor:'#4cc9f0',borderWidth:2.5,yAxisID:'y'},
+        {label:'Sobre umbral (téc.)',data:overCounts,borderColor:'#ff5d6c',borderDash:[5,4],
+         tension:.3,pointRadius:4,pointBackgroundColor:'#ff5d6c',borderWidth:2,yAxisID:'y2'}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{boxWidth:12,padding:14,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>c.datasetIndex===0?` Promedio: ${c.raw.toFixed(2).replace('.',',')}%`:` ${c.raw} técnicos > 5,5%`}}},
+      scales:{
+        y:{position:'left',grid:{color:'rgba(36,49,82,.4)'},ticks:{callback:v=>v+'%'},
+           title:{display:true,text:'promedio %',color:'#4cc9f0',font:{size:10}}},
+        y2:{position:'right',grid:{display:false},ticks:{precision:0},
+            title:{display:true,text:'téc. > umbral',color:'#ff5d6c',font:{size:10}}},
+        x:{grid:{display:false}}
+      }}
+  });
+}
+// umbral line on trend
+const umbralYPlugin={id:'umbralY',afterDraw(chart){
+  if(chart.canvas.id!=='trendChart')return;
+  const{ctx,chartArea,scales}=chart;const y=scales.y.getPixelForValue(UMBRAL);
+  if(y<chartArea.top||y>chartArea.bottom)return;
+  ctx.save();ctx.strokeStyle='rgba(245,183,67,.8)';ctx.lineWidth=1.2;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(chartArea.left,y);ctx.lineTo(chartArea.right,y);ctx.stroke();
+  ctx.setLineDash([]);ctx.fillStyle='#f5b743';ctx.font='10px Inter';ctx.textAlign='left';
+  ctx.fillText('meta 5,5%',chartArea.left+4,y-4);ctx.restore();
+}};
+if(HAS_CHART)Chart.register(umbralYPlugin);
+
+// ---- heatmap ----
+function renderHeat(rows){
+  // header
+  const hr=document.getElementById('hm-head-row');
+  let th=`<th class="l" data-k="tac">Técnico ${arrow('tac')}</th>`;
+  MESES.forEach((m,i)=>{th+=`<th data-k="${i}">${m.replace(' (en curso)','*')} ${arrow(i)}</th>`;});
+  th+=`<th data-k="avg">Prom. ${arrow('avg')}</th><th data-k="trend">Tend.</th>`;
+  hr.innerHTML=th;
+  hr.querySelectorAll('th').forEach(t=>t.onclick=()=>{
+    const k=t.dataset.k; const kk=(k==='tac'||k==='avg'||k==='trend')?k:+k;
+    if(state.sortKey===kk)state.sortDir*=-1; else{state.sortKey=kk;state.sortDir=(kk==='tac')?1:-1;}
+    render();
+  });
+
+  // tendencia sobre meses COMPLETOS (Mes1->Mes3); el Mes4 (en curso) queda solo en el sparkline
+  const withAvg=rows.map(r=>({...r,avg:r.m.reduce((a,b)=>a+b,0)/r.m.length, delta:r.m[r.m.length-1]-r.m[0]}));
+  const k=state.sortKey;
+  withAvg.sort((a,b)=>{
+    let av,bv;
+    if(k==='tac'){return a.tac.localeCompare(b.tac)*state.sortDir;}
+    else if(k==='avg'){av=a.avg;bv=b.avg;}
+    else if(k==='trend'){av=a.delta;bv=b.delta;}
+    else{av=a.m[k];bv=b.m[k];}
+    return (av-bv)*state.sortDir;
+  });
+
+  const body=document.getElementById('hm-body');
+  if(!withAvg.length){body.innerHTML=`<tr><td colspan="${MESES.length+3}"><div class="empty">Sin técnicos para este filtro.</div></td></tr>`;return;}
+  const maxV=Math.max(...withAvg.flatMap(r=>r.m),11);
+  body.innerHTML=withAvg.map(r=>{
+    const cells=r.m.map(v=>`<td><div class="cell" style="background:${colorFor(v)};color:${v>UMBRAL*1.05?'#2a0c10':'#06231b'}">${cellText(v)}</div></td>`).join('');
+    const avgCell=`<td><div class="cell" style="background:${colorFor(r.avg)}26;color:${colorFor(r.avg)};border:1px solid ${colorFor(r.avg)}55">${cellText(r.avg)}</div></td>`;
+    const spark=`<div class="spark">${r.m.map(v=>`<i style="height:${4+Math.min(1,v/maxV)*22}px;background:${colorFor(v)}"></i>`).join('')}</div>`;
+    const d=r.delta; const cls=Math.abs(d)<0.4?'flat':(d>0?'up':'down'); const ar=cls==='flat'?'—':(d>0?'▲':'▼');
+    return `<tr>
+      <td class="tac-cell"><span class="reg ${r.region}">${r.region}</span>
+        <span class="tac-name">${r.tac}</span><div class="tac-meta">${r.sup} · ${r.rut}</div></td>
+      ${cells}${avgCell}
+      <td><div class="trend ${cls}" title="Δ ${MESES[0]}→${MESES[MESES.length-1]}: ${d>0?'+':''}${d.toFixed(1).replace('.',',')} pts">${ar} ${spark}</div></td>
+    </tr>`;
+  }).join('');
+}
+function arrow(k){const kk=(k==='tac'||k==='avg'||k==='trend')?k:+k;
+  if(state.sortKey!==kk)return '<span class="ar">↕</span>';
+  return `<span class="ar">${state.sortDir>0?'↑':'↓'}</span>`;}
+
+function render(){
+  buildFilters();
+  const rows=filtered();
+  renderKPIs(rows);
+  renderRank(rows);
+  renderTrend(rows);
+  renderHeat(rows);
+}
+
+// ── Cargar datos de calidad desde GitHub (se actualiza solo, sin re-deploy) ──
+const DB_URL = 'https://raw.githubusercontent.com/luis-sepulveda/Datos.avance/main/db_calidad.json';
+function cargarYRender(){
+  fetch(DB_URL + '?t=' + Date.now())
+    .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(d => {
+      DB = d;
+      UMBRAL = DB.umbral;
+      MESES = DB.meses.slice();
+      const foot = document.getElementById('foot-info');
+      if(foot) foot.innerHTML = 'Reincidencia reactiva 30 días por dirección · calculado desde la data diaria del portal.<br>' +
+        DB.data.length + ' técnicos · ' + (DB.meses||[]).join(' · ') + (DB.generado ? ' · actualizado ' + DB.generado : '');
+      render();
+    })
+    .catch(e => {
+      console.error('No se pudo cargar db_calidad.json:', e);
+      const foot = document.getElementById('foot-info');
+      if(foot) foot.textContent = 'Error cargando datos: ' + e.message;
+    });
+}
+cargarYRender();
+
+</script>
+</body>
+</html>
