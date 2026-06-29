@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Anti-cache: fuerza al navegador a pedir siempre la version nueva -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Dashboards VTR/CLARO — RGU, Actividades y Reincidencia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #eef1f5;
+    --surface:   #ffffff;
+    --border:    rgba(0,0,0,0.10);
+    --blue:      #4f46e5;
+    --blue-pale: rgba(79,70,229,0.12);
+    --text:      #1c2230;
+    --text-2:    #6b7280;
+    --radius:    12px;
+    --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* Barra superior con los botones */
+  .switcher {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .switcher .brand {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    margin-right: 4px;
+  }
+
+  .switcher .brand small {
+    display: block;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--text-2);
+  }
+
+  .pills {
+    display: inline-flex;
+    gap: 6px;
+    background: var(--bg);
+    padding: 4px;
+    border-radius: 10px;
+  }
+
+  .pill {
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .pill:hover { color: var(--text); }
+
+  .pill.active {
+    background: var(--blue);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(79,70,229,0.35);
+  }
+
+  /* Zona de los iframes */
+  .views {
+    flex: 1;
+    position: relative;
+  }
+
+  .views iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+    background: var(--bg);
+  }
+
+  .views iframe.active { display: block; }
+</style>
+</head>
+<body>
+
+  <div class="switcher">
+    <div class="brand">
+      Dashboards VTR/CLARO
+      <small>Valparaíso · RM</small>
+    </div>
+    <div class="pills">
+      <button class="pill" id="btn-rgu" onclick="mostrar('rgu')">RGU</button>
+      <button class="pill" id="btn-act" onclick="mostrar('act')">Actividades</button>
+      <button class="pill" id="btn-rei" onclick="mostrar('rei')">Reincidencia</button>
+    </div>
+  </div>
+
+  <div class="views">
+    <iframe id="view-rgu" title="Dashboard RGU"></iframe>
+    <iframe id="view-act" title="Dashboard Actividades"></iframe>
+    <iframe id="view-rei" title="Dashboard Reincidencia"></iframe>
+  </div>
+
+  <script>
+    // Cache-buster: agrega la hora actual a la URL para forzar version nueva
+    var t = Date.now();
+    document.getElementById('view-rgu').src = 'rgu.html?v=' + t;
+    document.getElementById('view-act').src = 'actividades.html?v=' + t;
+    document.getElementById('view-rei').src = 'reincidencia.html?v=' + t;
+
+    var VISTAS = ['rgu', 'act', 'rei'];
+
+    function mostrar(cual) {
+      VISTAS.forEach(function (v) {
+        var activa = (v === cual);
+        document.getElementById('view-' + v).classList.toggle('active', activa);
+        document.getElementById('btn-' + v).classList.toggle('active', activa);
+      });
+    }
+
+    // Vista por defecto: RGU
+    mostrar('rgu');
+  </script>
+
+</body>
+</html>
